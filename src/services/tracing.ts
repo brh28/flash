@@ -6,6 +6,7 @@ import { GrpcInstrumentation } from "@opentelemetry/instrumentation-grpc"
 import { HttpInstrumentation } from "@opentelemetry/instrumentation-http"
 import { IORedisInstrumentation } from "@opentelemetry/instrumentation-ioredis"
 import { MongoDBInstrumentation } from "@opentelemetry/instrumentation-mongodb"
+import { ExpressInstrumentation } from "@opentelemetry/instrumentation-express"
 import { Span as SdkSpan, SimpleSpanProcessor } from "@opentelemetry/sdk-trace-base"
 import { NodeTracerProvider } from "@opentelemetry/sdk-trace-node"
 import {
@@ -203,6 +204,7 @@ registerInstrumentations({
     new MongoDBInstrumentation(),
     new GrpcInstrumentation(),
     new IORedisInstrumentation(),
+    new ExpressInstrumentation()
   ],
 })
 
