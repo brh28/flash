@@ -259,7 +259,7 @@ export const AuthWithEmailPasswordlessService = (): IAuthWithEmailPasswordlessSe
           csrf_token: cookieFlow.csrf,
         },
       })
-      const cookiesToSendBackToClient: Array<SessionCookie> = result.headers["set-cookie"]
+      const cookiesToSendBackToClient: Array<SessionCookie> = (result.headers["set-cookie"] ?? []) as SessionCookie[]
 
       if (!result.data.session.identity) return new InvalidIdentitySessionKratosError()
       // identity is only defined when identity has not enabled totp

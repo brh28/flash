@@ -1,5 +1,5 @@
 interface ILedgerTransaction {
-  _id?: ObjectId
+  _id: ObjectId
   credit: number
   debit: number
   meta?: { [k: string]: unknown }

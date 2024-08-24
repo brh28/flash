@@ -15,7 +15,7 @@ export const createCookieLoginFlow = async (): Promise<
   | KratosError
 > => {
   const flow = await kratosPublic.createBrowserLoginFlow()
-  const parsedCookies = setCookie.parse(flow.headers["set-cookie"])
+  const parsedCookies = setCookie.parse(flow.headers["set-cookie"] ?? [])
   const csrfCookie = parsedCookies?.find((c) => c.name.includes("csrf"))
   if (!csrfCookie) return new KratosError("Could not find csrf cookie")
   const cookie = libCookie.serialize(csrfCookie.name, csrfCookie.value, {

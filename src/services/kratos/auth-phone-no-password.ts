@@ -21,6 +21,8 @@ import {
 import { kratosAdmin, kratosPublic, toDomainIdentityPhone } from "./private"
 import { SchemaIdType } from "./schema"
 
+const toSessionCookie = (str: string): SessionCookie => str as SessionCookie;
+
 // login with phone
 
 export const AuthWithPhonePasswordlessService = (): IAuthWithPhonePasswordlessService => {
@@ -72,7 +74,7 @@ export const AuthWithPhonePasswordlessService = (): IAuthWithPhonePasswordlessSe
     const method = "password"
     try {
       const flow = await kratosPublic.createBrowserLoginFlow()
-      const parsedCookies = setCookie.parse(flow.headers["set-cookie"])
+      const parsedCookies = setCookie.parse(flow.headers["set-cookie"] as string[])
       const csrfCookie = parsedCookies?.find((c) => c.name.includes("csrf"))
       if (!csrfCookie) return new KratosError("Could not find csrf cookie")
 
@@ -94,7 +96,7 @@ export const AuthWithPhonePasswordlessService = (): IAuthWithPhonePasswordlessSe
           csrf_token: csrfCookie.value,
         },
       })
-      const cookiesToSendBackToClient: Array<SessionCookie> = result.headers["set-cookie"]
+      const cookiesToSendBackToClient: Array<SessionCookie> = (result.headers["set-cookie"] ?? []).map(toSessionCookie) as Array<SessionCookie>
 
       if (!result.data.session.identity) return new InvalidIdentitySessionKratosError()
       // note: this only works when whoami: required_aal = aal1
@@ -229,7 +231,7 @@ export const AuthWithPhonePasswordlessService = (): IAuthWithPhonePasswordlessSe
     try {
       const flow = await kratosPublic.createBrowserRegistrationFlow()
       const headers = flow.headers["set-cookie"]
-      const parsedCookies = setCookie.parse(headers)
+      const parsedCookies = setCookie.parse(headers as readonly string[])
       const csrfCookie = parsedCookies?.find((c) => c.name.includes("csrf"))
       if (!csrfCookie) return new KratosError("Could not find csrf cookie")
       const cookie = libCookie.serialize(csrfCookie.name, csrfCookie.value, {
@@ -250,7 +252,9 @@ export const AuthWithPhonePasswordlessService = (): IAuthWithPhonePasswordlessSe
           csrf_token: csrfCookie.value,
         },
       })
-      const cookiesToSendBackToClient: Array<SessionCookie> = result.headers["set-cookie"]
+
+      const cookies = result.headers["set-cookie"] ?? []
+      const cookiesToSendBackToClient: Array<SessionCookie> = cookies.map(toSessionCookie)
       const kratosUserId = result.data.identity.id as UserId
       return { cookiesToSendBackToClient, kratosUserId }
     } catch (err) {

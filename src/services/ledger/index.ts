@@ -2,7 +2,7 @@
  * an accounting reminder:
  * https://en.wikipedia.org/wiki/Double-entry_bookkeeping
  */
-import { Types } from "mongoose"
+import { Aggregate, Types } from "mongoose"
 import { toSats } from "@domain/bitcoin"
 import { toCents } from "@domain/fiat"
 import {
@@ -454,7 +454,7 @@ export const LedgerService = (): ILedgerService => {
   const listWalletIdsWithPendingPayments = async function* ():
     | AsyncGenerator<WalletId>
     | LedgerServiceError {
-    let transactions
+    let transactions // : Aggregate<Array<ILedgerTransaction>>
     try {
       transactions = Transaction.aggregate([
         {
@@ -469,9 +469,8 @@ export const LedgerService = (): ILedgerService => {
     } catch (error) {
       return new UnknownLedgerError(error)
     }
-
     for await (const { _id } of transactions) {
-      yield toWalletId(_id)
+      yield toWalletId(_id) ?? "" as WalletId
     }
   }
 
