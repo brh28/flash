@@ -11,6 +11,7 @@ import Ibex from "@services/ibex/client"
 import { IbexError } from "@services/ibex/errors"
 import { baseLogger } from "@services/logger"
 import { GResponse200 } from "ibex-client"
+import { ConnectionArguments, ConnectionCursor } from "graphql-relay"
 
 export const getTransactionsForWallets = async ({
   wallets,
@@ -20,11 +21,14 @@ export const getTransactionsForWallets = async ({
   paginationArgs?: PaginationArgs
 }): Promise<PartialResult<PaginatedArray<IbexTransaction>>> => {
   const walletIds = wallets.map((wallet) => wallet.id)
-
+  
+  const pagination = convertConnectionArgsToPagination(paginationArgs)
+  baseLogger.info({ ...pagination }, "Ibex pagination args")
   // Flash fork: return history from Ibex
   const ibexCalls = await Promise.all(walletIds
     .map(id => Ibex.getAccountTransactions({ 
       account_id: id,
+      ...pagination
     }))
   )
 
@@ -112,4 +116,60 @@ const toSettlementAmount = (
     ? -1 * ibexAmount 
     : ibexAmount
   return asCurrency(amt, currency)
+}
+
+type IbexPaginationArgs = {
+  // sort?: string | undefined; defaults to "settledAt"
+  page?: number | undefined;
+  limit?: number | undefined;
+}
+
+// Helper function to decode cursor (adjust based on your cursor implementation)
+function decodeCursor(cursor: ConnectionCursor): { page: number } | null {
+  try {
+    // This assumes cursor is base64 encoded JSON with page info
+    // Adjust this implementation based on your actual cursor format
+    const decoded = JSON.parse(atob(cursor));
+    return { page: decoded.page || 1 };
+  } catch {
+    return null;
+  }
+}
+
+export function convertConnectionArgsToPagination(
+  args: ConnectionArguments | undefined
+): IbexPaginationArgs {
+  const DEFAULTS = {
+    page: 0,
+    limit: 10,
+  }
+  if (!args) return DEFAULTS
+
+  const result: IbexPaginationArgs = {};
+
+  // Handle limit (prefer 'first' over 'last')
+  if (args.first !== null && args.first !== undefined) {
+    result.limit = args.first;
+  } else if (args.last !== null && args.last !== undefined) {
+    result.limit = args.last;
+  }
+
+  // Handle page calculation based on cursors
+  if (args.after) {
+    const afterInfo = decodeCursor(args.after);
+    if (afterInfo) {
+      result.page = afterInfo.page + 1;
+    }
+  } else if (args.before) {
+    const beforeInfo = decodeCursor(args.before);
+    if (beforeInfo) {
+      result.page = Math.max(1, beforeInfo.page - 1);
+    }
+  }
+
+  if (!result.page) {
+    result.page = DEFAULTS.page;
+  }
+
+  return result;
 }

@@ -69,10 +69,12 @@ const UsdWallet = GT.Object<Wallet>({
       type: TransactionConnection,
       args: connectionArgs,
       resolve: async (source, args) => {
+        baseLogger.info({ ...args}, "UsdWallet transactions connection args")
         const paginationArgs = checkedConnectionArgs(args)
         if (paginationArgs instanceof Error) {
           throw paginationArgs
         }
+        baseLogger.info({ ...paginationArgs}, "Paginationargs")
 
         const { result, error } = await Wallets.getTransactionsForWallets({
           wallets: [source],
